@@ -1,22 +1,23 @@
 import {
-  mysqlTable,
-  mysqlEnum,
+  pgTable,
+  pgEnum,
   serial,
   varchar,
   text,
   timestamp,
-  int,
+  integer,
   bigint,
-  // bigint,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 
-export const users = mysqlTable("users", {
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+
+export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   unionId: varchar("unionId", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -28,19 +29,19 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const photos = mysqlTable("photos", {
+export const photos = pgTable("photos", {
   id: serial("id").primaryKey(),
-  ownerId: bigint("ownerId", { mode: "number", unsigned: true })
+  ownerId: integer("ownerId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   key: varchar("key", { length: 512 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   title: varchar("title", { length: 255 }),
   album: varchar("album", { length: 128 }),
-  size: bigint("size", { mode: "number", unsigned: true }).notNull(),
+  size: bigint("size", { mode: "number" }).notNull(),
   contentType: varchar("contentType", { length: 128 }).notNull(),
-  width: int("width"),
-  height: int("height"),
+  width: integer("width"),
+  height: integer("height"),
   takenAt: timestamp("takenAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
