@@ -8,6 +8,10 @@ import { createRouter, publicQuery, authedQuery } from "./middleware.js";
 import { env } from "./lib/env.js";
 import { signSessionToken } from "./kimi/session.js";
 import { upsertUser } from "./queries/users.js";
+import {
+  verifyTurnstileToken,
+  clientIpFromHeaders,
+} from "./lib/turnstile.js";
 
 export const authRouter = createRouter({
   me: authedQuery.query((opts) => opts.ctx.user),
@@ -15,8 +19,24 @@ export const authRouter = createRouter({
   // 单用户密码登录：用于无法使用 Kimi OAuth 的部署环境（如 Vercel）。
   // 仅在设置了 LOGIN_PASSWORD 环境变量时启用；登录身份为站点主人。
   passwordLogin: publicQuery
-    .input(z.object({ password: z.string().min(1).max(128) }))
+    .input(
+      z.object({
+        password: z.string().min(1).max(128),
+        turnstileToken: z.string().max(4096).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
+      const turnstile = await verifyTurnstileToken(
+        input.turnstileToken,
+        clientIpFromHeaders(ctx.req.headers),
+      );
+      if (!turnstile.ok) {
+        console.warn("[auth] Turnstile verification failed:", turnstile.reason);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "人机验证未通过，请刷新页面重试",
+        });
+      }
       if (!env.loginPassword) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",

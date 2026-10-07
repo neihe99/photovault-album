@@ -17,4 +17,5 @@ export const env = {
   kimiOpenUrl: required("KIMI_OPEN_URL"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
   loginPassword: process.env.LOGIN_PASSWORD ?? "",
+  turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY ?? "",
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,23 +24,78 @@ function getOAuthUrl() {
   return url.toString();
 }
 
+const TURNSTILE_SITE_KEY: string | undefined = import.meta.env
+  .VITE_TURNSTILE_SITE_KEY;
+
 export default function Login() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const widgetIdRef = useRef<string | null>(null);
+  const widgetHostRef = useRef<HTMLDivElement>(null);
+
+  // 加载 Turnstile 组件（配置了 VITE_TURNSTILE_SITE_KEY 时启用）
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) return;
+    if (window.turnstile && widgetHostRef.current) {
+      renderWidget();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.onload = () => renderWidget();
+    document.body.appendChild(script);
+    return () => {
+      script.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const renderWidget = () => {
+    if (!window.turnstile || !widgetHostRef.current || widgetIdRef.current)
+      return;
+    widgetIdRef.current = window.turnstile.render(widgetHostRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token: string) => setTurnstileToken(token),
+      "expired-callback": () => setTurnstileToken(""),
+      "error-callback": () => setTurnstileToken(""),
+    });
+  };
+
+  const resetWidget = () => {
+    setTurnstileToken("");
+    if (widgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(widgetIdRef.current);
+    }
+  };
 
   const passwordLogin = trpc.auth.passwordLogin.useMutation({
     onSuccess: () => {
       navigate("/", { replace: true });
       window.location.reload();
     },
-    onError: (e) => setError(e.message || "登录失败"),
+    onError: (e) => {
+      setError(e.message || "登录失败");
+      resetWidget();
+    },
   });
+
+  const turnstileEnabled = !!TURNSTILE_SITE_KEY;
+  const canSubmit =
+    password.trim().length > 0 &&
+    (!turnstileEnabled || turnstileToken.length > 0);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.trim()) passwordLogin.mutate({ password });
+    if (!canSubmit) return;
+    passwordLogin.mutate({
+      password,
+      ...(turnstileToken ? { turnstileToken } : {}),
+    });
   };
 
   return (
@@ -80,12 +135,19 @@ export default function Login() {
                 autoComplete="current-password"
               />
             </div>
+
+            {turnstileEnabled && (
+              <div className="flex justify-center pt-1">
+                <div ref={widgetHostRef} />
+              </div>
+            )}
+
             {error && <p className="text-xs text-destructive">{error}</p>}
             <Button
               type="submit"
               variant="secondary"
               className="w-full"
-              disabled={!password.trim() || passwordLogin.isPending}
+              disabled={!canSubmit || passwordLogin.isPending}
             >
               {passwordLogin.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
