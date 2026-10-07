@@ -15,7 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "build:vercel": "vite build && esbuild server/vercel.ts --bundle --platform=node --format=esm --outfile=vercel-bundle/index.mjs"
+    "build:vercel": "vite build && esbuild server/vercel.ts --bundle --platform=node --format=esm --outfile=vercel-bundle/index.mjs --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\""
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "2.0.78",
