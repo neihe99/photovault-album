@@ -27,6 +27,15 @@ function getOAuthUrl() {
 const TURNSTILE_SITE_KEY: string | undefined = import.meta.env
   .VITE_TURNSTILE_SITE_KEY;
 
+// Kimi OAuth 仅支持 Kimi 平台域名（官方限制：导出的代码需改用账号密码登录）。
+// 平台域名（*.ok.kimi.link）或本地开发时显示 Kimi 登录；自部署域名自动隐藏。
+const hostname = window.location.hostname;
+const kimiLoginEnabled =
+  import.meta.env.VITE_ENABLE_KIMI_LOGIN === "true" ||
+  hostname.endsWith(".kimi.link") ||
+  hostname === "localhost" ||
+  hostname === "127.0.0.1";
+
 export default function Login() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -105,21 +114,25 @@ export default function Login() {
           <CardTitle className="text-xl">PhotoVault 相册</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={() => {
-              window.location.href = getOAuthUrl();
-            }}
-          >
-            使用 Kimi 账号登录
-          </Button>
+          {kimiLoginEnabled && (
+            <>
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  window.location.href = getOAuthUrl();
+                }}
+              >
+                使用 Kimi 账号登录
+              </Button>
 
-          <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">或</span>
-            <Separator className="flex-1" />
-          </div>
+              <div className="flex items-center gap-3">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">或</span>
+                <Separator className="flex-1" />
+              </div>
+            </>
+          )}
 
           <form onSubmit={submit} className="space-y-3">
             <div className="space-y-1.5">
