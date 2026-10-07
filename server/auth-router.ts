@@ -16,6 +16,13 @@ import {
 export const authRouter = createRouter({
   me: authedQuery.query((opts) => opts.ctx.user),
 
+  // 登录配置：让前端按服务端实际配置渲染（密码登录是否可用、是否强制人机验证），
+  // 避免「服务端要求验证令牌、前端却没有渲染组件」的配置错配导致无法登录。
+  loginConfig: publicQuery.query(() => ({
+    passwordLoginEnabled: !!env.loginPassword,
+    turnstileRequired: !!env.turnstileSecretKey,
+  })),
+
   // 单用户密码登录：用于无法使用 Kimi OAuth 的部署环境（如 Vercel）。
   // 仅在设置了 LOGIN_PASSWORD 环境变量时启用；登录身份为站点主人。
   passwordLogin: publicQuery
@@ -32,9 +39,12 @@ export const authRouter = createRouter({
       );
       if (!turnstile.ok) {
         console.warn("[auth] Turnstile verification failed:", turnstile.reason);
+        const isMissingToken = turnstile.reason === "missing-turnstile-token";
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "人机验证未通过，请刷新页面重试",
+          message: isMissingToken
+            ? "人机验证未通过：未收到验证令牌。请确认已在构建环境配置 VITE_TURNSTILE_SITE_KEY 并重新部署"
+            : "人机验证未通过，请刷新页面重试",
         });
       }
       if (!env.loginPassword) {

@@ -44,9 +44,17 @@ export default function Login() {
   const widgetIdRef = useRef<string | null>(null);
   const widgetHostRef = useRef<HTMLDivElement>(null);
 
-  // 加载 Turnstile 组件（配置了 VITE_TURNSTILE_SITE_KEY 时启用）
+  // 服务端实际配置：密码登录是否可用、是否强制人机验证
+  const loginConfig = trpc.auth.loginConfig.useQuery();
+  const turnstileRequired = loginConfig.data?.turnstileRequired ?? false;
+  // 两端配置一致才启用：服务端强制验证 + 构建时注入了 Site Key
+  const turnstileEnabled = turnstileRequired && !!TURNSTILE_SITE_KEY;
+  // 配置错配：服务端要求验证，但前端构建时缺少 VITE_TURNSTILE_SITE_KEY
+  const turnstileMisconfigured = turnstileRequired && !TURNSTILE_SITE_KEY;
+
+  // 加载 Turnstile 组件（服务端启用且构建时配置了 VITE_TURNSTILE_SITE_KEY 时才渲染）
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY) return;
+    if (!turnstileEnabled) return;
     if (window.turnstile && widgetHostRef.current) {
       renderWidget();
       return;
@@ -61,7 +69,7 @@ export default function Login() {
       script.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [turnstileEnabled]);
 
   const renderWidget = () => {
     if (!window.turnstile || !widgetHostRef.current || widgetIdRef.current)
@@ -92,9 +100,9 @@ export default function Login() {
     },
   });
 
-  const turnstileEnabled = !!TURNSTILE_SITE_KEY;
   const canSubmit =
     password.trim().length > 0 &&
+    !turnstileMisconfigured &&
     (!turnstileEnabled || turnstileToken.length > 0);
 
   const submit = (e: React.FormEvent) => {
@@ -153,6 +161,13 @@ export default function Login() {
               <div className="flex justify-center pt-1">
                 <div ref={widgetHostRef} />
               </div>
+            )}
+
+            {turnstileMisconfigured && (
+              <p className="text-xs text-destructive">
+                站点已启用人机验证，但前端构建时缺少 VITE_TURNSTILE_SITE_KEY
+                环境变量。请在 Vercel 环境变量中配置该变量并重新部署。
+              </p>
             )}
 
             {error && <p className="text-xs text-destructive">{error}</p>}
