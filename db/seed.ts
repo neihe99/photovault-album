@@ -1,5 +1,5 @@
-import { getDb } from "../api/queries/connection";
-// TODO: import tables from "./schema"
+import { getDb } from "../server/queries/connection.js";
+// TODO: import tables from "./schema.js"
 
 async function seed() {
   const db = getDb();

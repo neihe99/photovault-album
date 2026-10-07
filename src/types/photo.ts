@@ -1,4 +1,4 @@
-import type { AppRouter } from "../../api/router";
+import type { AppRouter } from "../../server/router";
 import type { inferRouterOutputs } from "@trpc/server";
 
 export type PhotoItem = inferRouterOutputs<AppRouter>["photos"]["list"][number];

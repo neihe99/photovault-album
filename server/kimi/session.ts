@@ -1,6 +1,6 @@
 import * as jose from "jose";
-import { env } from "../lib/env";
-import type { SessionPayload } from "./types";
+import { env } from "../lib/env.js";
+import type { SessionPayload } from "./types.js";
 
 const JWT_ALG = "HS256";
 

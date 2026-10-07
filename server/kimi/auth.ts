@@ -2,14 +2,14 @@ import type { Context } from "hono";
 import { setCookie } from "hono/cookie";
 import * as jose from "jose";
 import * as cookie from "cookie";
-import { env } from "../lib/env";
-import { getSessionCookieOptions } from "../lib/cookies";
-import { Session } from "@contracts/constants";
-import { Errors } from "@contracts/errors";
-import { signSessionToken, verifySessionToken } from "./session";
-import { users as kimiUsers } from "./platform";
-import { findUserByUnionId, upsertUser } from "../queries/users";
-import type { TokenResponse } from "./types";
+import { env } from "../lib/env.js";
+import { getSessionCookieOptions } from "../lib/cookies.js";
+import { Session } from "../../contracts/constants.js";
+import { Errors } from "../../contracts/errors.js";
+import { signSessionToken, verifySessionToken } from "./session.js";
+import { users as kimiUsers } from "./platform.js";
+import { findUserByUnionId, upsertUser } from "../queries/users.js";
+import type { TokenResponse } from "./types.js";
 
 async function exchangeAuthCode(
   code: string,

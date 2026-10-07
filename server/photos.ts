@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
-import { createRouter, authedQuery } from "./middleware";
-import { storage } from "./lib/storage";
-import { getDb } from "./queries/connection";
-import { photos } from "../db/schema";
+import { createRouter, authedQuery } from "./middleware.js";
+import { storage } from "./lib/storage.js";
+import { getDb } from "./queries/connection.js";
+import { photos } from "../db/schema.js";
 
 const MAX_BASE64 = 140_000_000; // ~100MB 上限（base64 膨胀 4/3）
 
