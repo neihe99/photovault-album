@@ -3,7 +3,12 @@ import "dotenv/config";
 function required(name: string): string {
   const value = process.env[name];
   if (!value && process.env.NODE_ENV === "production") {
-    throw new Error(`Missing required environment variable: ${name}`);
+    // 不在启动时抛异常：否则整个函数在 Vercel 上直接崩溃（Troubleshoot 页面），
+    // 且无法从外部判断原因。改为启动时告警 + 运行期暴露 /api/health 便于诊断。
+    console.error(
+      `[env] Missing required environment variable: ${name} — ` +
+        `站点将以降级模式启动，请访问 /api/health 查看缺失项`,
+    );
   }
   return value ?? "";
 }
